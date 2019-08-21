@@ -1,45 +1,128 @@
-#!/bin/bash
-# Argument = -t test -r server -p password -v
+#!/usr/bin/env bash
+#
+# usage:
+#     rbenv only -r <version> <command>
+#     rbenv only -r <version> -- <command --with --flags>
+#
+#
+# Run a command against specified installed ruby versions
+#
+# options:
+#     --help, -h:                      Show this message
+#     --quiet, -q:                     quiet mode; don't print a header for each ruby
+#     --ruby <version>, -r <version>:  Run <command> in ruby <version>
+#                                      (may be specified more than once)
 
-usage()
-{
-cat << EOF
+set -e
+[ -n "$RBENV_DEBUG" ] && set -x
 
-Run a command against the specified rubies
+help_computer() {
+  cat <<HELP
+Run a command against specified installed ruby versions
+    rbenv only -r <version> <command>
+    rbenv only -r <version> -- <command --with --flags>
 
-OPTIONS:
-   -h      Show this message
-   -r      Ruby versions e.g.  -r 1.8.7-p249,1.9.2-p290
-   -c      Command to run e.g. -c "bundle exec rake test"
-EOF
+options:
+    --help, -h:                      show this message
+    --quiet, -q:                     quiet mode; don't print a header for each ruby
+    --ruby <version>, -r <version>:  run <command> in ruby <version>
+                                       (may be specified more than once)
+HELP
 }
 
-VERSIONS=
-COMMAND=
-while getopts “hr:c:” OPTION
-do
-     case $OPTION in
-         h)
-             usage
-             exit 1
-             ;;
-         r)
-             VERSIONS=$OPTARG
-             ;;
-         c)
-             COMMAND=$OPTARG
-             ;;
-         ?)
-             usage
-             exit
-             ;;
-     esac
+header() {
+  local version
+  version="${1}"
+  shift
+
+  local msg
+  msg="[$ruby]: ${*}"
+
+  [[ -n ${quiet} ]] && return
+
+  echo -e "${msg}" >&2
+  printf '%*s\n' "${#msg}" - | tr ' ' '-' >&2
+}
+
+# collect ruby versions
+rubies=()
+# collect errors to output them all at once
+errors=()
+# collect hosts from all arguments
+rubies=()
+# set quiet flag as empty
+quiet=''
+# count number of iterations (for formatting)
+counter=0
+
+# Provide rbenv completions
+for opt in "${@}"; do
+  case "${opt}" in
+  --complete)
+    echo "--ruby"
+    echo "--help"
+    echo "--verbose"
+    exit
+    ;;
+
+  -h | --help)
+    help_computer
+    exit
+    ;;
+
+  -r | --ruby)
+    rubies+=("${2}")
+    shift 2
+    ;;
+
+  --ruby=*)
+    rubies+=("${opt#*=}")
+    shift
+    ;;
+
+  -q | --quiet)
+    quiet='true'
+    shift
+    ;;
+
+  --)
+    shift
+    break
+    ;;
+
+  -*)
+    errors+=("unknown flag: ${opt%%=*}")
+    shift
+    ;;
+  esac
 done
 
-rubies=$(echo $VERSIONS | tr "," "\n")
+# process any errors that were found
+if [[ ${#errors[@]} -gt 0 ]]; then
+  for error in "${errors[@]}"; do
+    echo "ERROR: ${error}" >&2
+  done
 
-for ruby in $rubies; do
-  echo -e "\033[1;34m[$ruby]:\033[0m \033[1;32m$COMMAND\033[0m";
-  echo -e "\033[1;34m******************************************************************\033[0m";
-  RBENV_VERSION=$ruby $COMMAND
+  # This is intentional newline, for formatting;
+  # break up the errors from `help_computer`
+  echo
+  help_computer 1>&2
+  exit 1
+fi
+
+for ruby in "${rubies[@]}"; do
+  # this will print a conditional spacer between each iteration
+  # after the first iteration
+  [[ ${counter} -gt 0 ]] && echo >&2
+
+  header "${ruby}" "${@}"
+
+  if ! rbenv versions --bare | grep -q "${ruby}"; then
+    echo "ERROR: ruby version ${ruby} is not installed; skipping" >&2
+    continue
+  fi
+
+  RBENV_VERSION="${ruby}" "${@}"
+
+  ((counter += 1))
 done
