@@ -17,7 +17,7 @@ options:
 ```shell
 $ mkdir -p ~/.rbenv/plugins
 $ cd ~/.rbenv/plugins
-$ git clone https://github.com/rodreegez/rbenv-only.git
+$ git clone https://github.com/mckern/rbenv-only.git
 ```
 
 ## Usage
@@ -31,8 +31,8 @@ $ rbenv only --ruby 2.6.3 -- gem --version
 
 ## Credits
 
-This started life as a fork of [rbenv-only](https://github.com/mckern/rbenv-only), which was in turn mostly ripped off from [rbenv-each](https://github.com/chriseppstein/rbenv-each). It has been completely rewritten, but credit where credit is due.
+This started life as a fork of [rbenv-only](https://github.com/rodreegez/rbenv-only), which was in turn mostly ripped off from [rbenv-each](https://github.com/chriseppstein/rbenv-each). It has been completely rewritten, but credit where credit is due.
 
 ## License
 
-Unfortunately, [rbenv-only](https://github.com/mckern/rbenv-only) was unlicensed so licensing is questionable at best. My changes made as part of the rewrite are licensed under the Apache License, Version 2.0.
+Unfortunately, [rbenv-only](https://github.com/rodreegez/rbenv-only) was unlicensed so licensing is questionable at best. My changes made as part of the rewrite are licensed under the Apache License, Version 2.0.
